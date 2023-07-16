@@ -1,1 +1,2 @@
 # NUS-ME5405
+An in-depth machine vision project which touches upon image processing procedures such as conversion of image into a binary image (thresholding), determining a one-pixel thin image of objects (thinning), outlining and labelling objects in the image (segmentation), and classification of images using unsupervised methods including k-nearest neighbors (kNN) and support vector machine (SVM). 
