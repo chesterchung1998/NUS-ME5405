@@ -1,0 +1,33 @@
+function [segmented_images] = segment(labelled_image, segment_size)
+
+segmented_images = zeros(segment_size, segment_size, 3, num_chars, 'uint8') + 255;
+
+% find all unique non zero nodes
+unique_val = unique(labelled_image(labelled_image > 0));
+
+for i = 1:length(unique_val)
+    % get pixels of each labelled object
+    [r, c] = find(labelled_image == i);
+    rc = [r c];
+
+    % find the min and max coordinates
+    h_min = min(rc(:, 1));
+    h_max = max(rc(:, 1));
+    w_min = min(rc(:, 2));
+    w_max = max(rc(:, 2));
+
+    % create segmented image
+    image = zeros(h_max-h_min, w_max-w_min);
+    
+    for m = h_min:h_max
+        for n = w_min:w_max
+            if (labelled_image(m, n) ~= 0)
+                image(m, n) = 1;
+            end
+        end
+    end
+
+    segmented_images(end+1) = image;
+end
+
+end

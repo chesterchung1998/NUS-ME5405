@@ -1,0 +1,117 @@
+% Function for labelling of different segments within image.
+
+function [labelled_image, coloured_image] = label(binary_image, connectivity)
+
+[row, col] = size(binary_image);
+labelled_image = zeros(row, col, 'uint8');
+labelled_image = padarray(labelled_image, [1 1], 'both');
+
+label = 1;  % keep track of number of objects
+s = [];     % graph source nodes
+t = [];     % graph target nodes
+
+% loop through every pixel
+for i = 2:row+1
+    for j = 2:col+1
+        if (binary_image(i-1, j-1) ~= 0) % bright (object) pixel
+            % check left and top neighbours
+            left = labelled_image(i, j-1);
+            top = labelled_image(i-1, j);
+            neighbours = [left top];
+            if (connectivity == 8)
+                top_left = labelled_image(i-1, j-1);
+                top_right = labelled_image(i-1, j+1);
+                neighbours(end+1) = top_left;
+                neighbours(end+1) = top_right;
+            end
+
+            % no neighbours - assign new label
+            if (nnz(neighbours) == 0)
+                labelled_image(i, j) = label;
+                label = label + 1;
+            
+            % only one labelled neighbour - assign same label as neighbour
+            elseif (nnz(neighbours) == 1)
+                labelled_image(i, j) = neighbours(neighbours > 0);
+
+            % more than one labelled neighbour
+            else
+                % take min label
+                labelled_image(i,j) = min(neighbours(neighbours > 0));
+
+                % if current px and neighbours different, add to equivalence table
+                if left > 0 && left ~= labelled_image(i,j)
+                    s(end + 1) = left;
+                    t(end + 1) = labelled_image(i,j);
+                end
+                if top > 0 && top ~= labelled_image(i,j)
+                    s(end + 1) = top;
+                    t(end + 1) = labelled_image(i,j);
+                end
+                if (connectivity == 8)
+                    if top_left > 0 && top_left ~= labelled_image(i,j)
+                        s(end + 1) = top_left;
+                        t(end + 1) = labelled_image(i,j);
+                    end
+                    if top_right > 0 && top_right ~= labelled_image(i,j)
+                        s(end + 1) = top_right;
+                        t(end + 1) = labelled_image(i,j);
+                    end
+                end
+            end
+        end
+    end
+end
+
+% Remove padding from image
+labelled_image = labelled_image(2:row+1, 2:col+1);
+
+% construct graph to search for equivalences
+G = graph(s, t);
+nodes = [s t];
+
+% process equivalences
+for n = 1:max(nodes)
+    v = dfsearch(G,n);
+    for i = 1:row
+        for j = 1:col
+            if labelled_image(i,j) == n
+                labelled_image(i,j) = min(v);
+            end
+        end
+    end
+end
+
+% find all unique non zero nodes
+unique_val = unique(labelled_image(labelled_image > 0));
+
+% relabel whole image
+for n = 1:length(unique_val)
+    for i = 1:row
+        for j = 1:col
+            if labelled_image(i,j) == unique_val(n)
+                labelled_image(i,j) = n;
+            end
+        end
+    end
+end
+
+% generate random colour for each label 
+num_colours = length(unique_val) + 1;
+colour_array = zeros(num_colours, 3); % each row is an RGB combination
+colour_array(1,:) = [1 1 1]; % white if unlabelled
+
+for i = 2:num_colours
+    random_colour = rand(1,3);
+    colour_array(i,:) = random_colour;
+end
+
+coloured_image = zeros(row, col, 3);
+
+for i = 1:row
+    for j = 1:col
+        coloured_image(i,j,:) = colour_array(labelled_image(i,j)+1,:);
+    end
+end
+
+end
